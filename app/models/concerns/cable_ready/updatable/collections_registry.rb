@@ -22,11 +22,19 @@ module CableReady
       private
 
       def find_resource_for_update(collection, model)
-        raise ArgumentError, "Could not find inverse_of for #{collection[:name]}" unless collection[:inverse_association]
+        inverse_association = collection[:inverse_association]
+
+        # Sometimes this isn't coming through even when we've defined the `inverse_of` on both sides of the association.
+        unless inverse_association
+          # For now, we'll just force the issue.
+          inverse_association = collection[:klass].reflect_on_association(collection[:name]).inverse_of.name.to_s
+        end
+
+        raise ArgumentError, "Could not find inverse_of for #{collection[:name]}" unless inverse_association
 
         resource = model
         resource = resource.send(collection[:through_association].underscore) if collection[:through_association]
-        resource.send(collection[:inverse_association].underscore)
+        resource.send(inverse_association.underscore)
       end
     end
   end
